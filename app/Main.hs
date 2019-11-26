@@ -132,6 +132,10 @@ lose grid = do
   let losers = map lose_cell grid
   True `elem` losers
 
+ai :: [Cell] -> [Cell]
+ai grid = do
+  uncover grid 0
+
 move :: [Cell] -> String -> Int -> Int -> Int -> [Cell]
 move grid action size x y
   | action == "flag" && x < size && y < size    = flag grid (get_index x y size)
@@ -143,15 +147,26 @@ play grid size
   | win grid size = putStrLn "You Win"
   | lose grid = putStrLn "You Lose"
   | otherwise = do
-    putStrLn "Do you want to flag or uncover?"
+    putStrLn "Do you want to flag, uncover or ai?"
     action <- getLine
-    putStrLn "What is your x coordinate?"
-    x <- getLine
-    putStrLn "What is your y coordinate?"
-    y <- getLine
-    let new_grid = move grid action size (read x :: Int) (read y :: Int)
-    mapM_ print $ chunksOf size $ show_grid new_grid
-    play new_grid size
+    if (action == "ai") then
+      do
+        let new_grid = ai grid
+        mapM_ print $ chunksOf size $ show_grid new_grid
+        play new_grid size
+    else if (action == "flag" || action == "uncover") then
+      do
+        putStrLn "What is your x coordinate?"
+        x <- getLine
+        putStrLn "What is your y coordinate?"
+        y <- getLine
+        let new_grid = move grid action size (read x :: Int) (read y :: Int)
+        mapM_ print $ chunksOf size $ show_grid new_grid
+        play new_grid size
+    else
+      do
+        play grid size
+
 
 main :: IO ()
 main = do
