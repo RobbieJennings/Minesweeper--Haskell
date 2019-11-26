@@ -21,12 +21,18 @@ uncover_cell a = Cell { uncovered = True
 
 flag_cell :: Cell -> Cell
 flag_cell a | uncovered a = a
+            | flagged a   = Cell { uncovered = False
+                                 , flagged = False
+                                 , bomb = bomb a
+                                 , neighbours = neighbours a
+                                 , number = number a
+                                 }
             | otherwise   = Cell { uncovered = False
-                                  , flagged = True
-                                  , bomb = bomb a
-                                  , neighbours = neighbours a
-                                  , number = number a
-                                  }
+                                 , flagged = True
+                                 , bomb = bomb a
+                                 , neighbours = neighbours a
+                                 , number = number a
+                                 }
 
 get_index :: Int -> Int -> Int -> Int
 get_index x y size = x+(y*size)
