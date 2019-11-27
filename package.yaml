@@ -28,6 +28,7 @@ library:
   - random
   - split
   - threepenny-gui
+  - gloss
 
 executables:
   minesweeper-exe:

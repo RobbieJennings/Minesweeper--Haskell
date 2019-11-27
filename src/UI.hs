@@ -1,10 +1,13 @@
 module UI where
 
 import Minesweeper
+
 import Data.List.Split
 import System.Random
+
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core as Core
+import Graphics.Gloss.Interface.Environment
 
 pixels :: Int -> String
 pixels size = (show size) ++ "px"
@@ -78,11 +81,57 @@ terminal_play size num_mines = do
   mapM_ print $ chunksOf size $ show_grid grid
   terminal grid size
 
+cell_button :: [Cell] -> Int -> Int -> Int -> Window -> UI Element
+cell_button grid size index button_size window
+  | (not $ uncovered (grid!!index)) && (not $ flagged (grid!!index)) = do
+      button <- UI.button # set text "."
+                          # set (attr "class") ("button")
+                          # set (attr "oncontextmenu") ("return false;")
+                          # set style  [("background-color","white")
+                                       , ("width", (pixels button_size))
+                                       , ("height", (pixels button_size))
+                                       ]
+      return button
+  | flagged (grid!!index) = do
+      button <- UI.button # set text "F"
+                          # set (attr "class") ("button")
+                          # set (attr "oncontextmenu") ("return false;")
+                          # set style  [("background-color","green")
+                                       , ("width", (pixels button_size))
+                                       , ("height", (pixels button_size))
+                                       ]
+      return button
+  | bomb (grid!!index) = do
+      button <- UI.button # set text "X"
+                          # set (attr "class") ("button")
+                          # set (attr "oncontextmenu") ("return false;")
+                          # set style  [("background-color","red")
+                                       , ("width", (pixels button_size))
+                                       , ("height", (pixels button_size))
+                                       ]
+      return button
+  | (number (grid!!index) == 0) = do
+      button <- UI.button # set text "."
+                          # set (attr "class") ("button")
+                          # set (attr "oncontextmenu") ("return false;")
+                          # set style  [("background-color","grey")
+                                       , ("width", (pixels button_size))
+                                       , ("height", (pixels button_size))
+                                       ]
+      return button
+  | otherwise = do
+      button <- UI.button # set text (show $ number (grid!!index))
+                          # set (attr "class") ("button")
+                          # set (attr "oncontextmenu") ("return false;")
+                          # set style  [("background-color","grey")
+                                       , ("width", (pixels button_size))
+                                       , ("height", (pixels button_size))
+                                       ]
+      return button
+
 clickable_cell :: [Cell] -> Int -> Int -> Int -> Window -> UI Element
 clickable_cell grid size index button_size window = do
-  button <- UI.button #+ [string (show_cell (grid!!index))]
-                      # set (attr "class") ("button")
-                      # set style [("width", (pixels button_size)), ("height", (pixels button_size))]
+  button <- cell_button grid size index button_size window
   on UI.click button $ \_ -> do
     buttons <- getElementsByClassName window "button"
     mapM_ Core.delete buttons
@@ -97,9 +146,7 @@ clickable_cell grid size index button_size window = do
 
 unclickable_cell :: [Cell] -> Int -> Int -> Int -> Window -> UI Element
 unclickable_cell grid size index button_size window = do
-  button <- UI.button #+ [string (show_cell (grid!!index))]
-                      # set (attr "class") ("button")
-                      # set style [("width", (pixels button_size)), ("height", (pixels button_size))]
+  button <- cell_button grid size index button_size window
   return button
 
 ai_button :: [Cell] -> Int -> Int -> Window -> UI Element
@@ -164,7 +211,11 @@ gui my_grid size button_size window
 
 gui_play :: Int -> Int -> IO ()
 gui_play size num_mines = do
-  let button_size = 50
+  (width, height) <- getScreenSize
+  let screen_size = min width height
+  let button_ratio = (screen_size `div` (size + 1))
+  let button_size = floor (fromIntegral (button_ratio) * 0.8)
+
   bombs <- fmap (make_bombs size num_mines) getStdGen
   let grid = make_grid size bombs
   startGUI defaultConfig $ gui grid size button_size
