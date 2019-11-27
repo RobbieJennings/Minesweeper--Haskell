@@ -105,16 +105,6 @@ flag grid index = do
   let second = drop (index+1) grid
   first ++ ([my_cell] ++ second)
 
-show_cell :: Cell -> String
-show_cell a
-  | flagged a             = "F"
-  | uncovered a && bomb a = "X"
-  | uncovered a           = show (number a)
-  | otherwise             = "?"
-
-show_grid :: [Cell] -> [String]
-show_grid a = map show_cell a
-
 win_cell :: Cell -> Bool
 win_cell a = ((uncovered a) && (not (bomb a))) || ((not (uncovered a)) && (bomb a))
 

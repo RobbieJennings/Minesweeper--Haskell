@@ -5,6 +5,16 @@ import Data.List.Split
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core as Core
 
+show_cell :: Cell -> String
+show_cell a
+  | flagged a             = "F"
+  | uncovered a && bomb a = "X"
+  | uncovered a           = show (number a)
+  | otherwise             = "?"
+
+show_grid :: [Cell] -> [String]
+show_grid a = map show_cell a
+
 terminal :: [Cell] -> Int -> IO ()
 terminal grid size
   | win grid size = putStrLn "You Win"
