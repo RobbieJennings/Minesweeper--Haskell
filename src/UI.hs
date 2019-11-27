@@ -215,24 +215,24 @@ loser_button grid size num_mines button_size generator window = do
 gui :: [Cell] -> Int -> Int -> Int -> StdGen -> Window -> UI ()
 gui grid size num_mines button_size generator window
   | win grid size = do
-      getBody window #+ [ unclickable_grid grid size button_size window
-                        , winner_button size num_mines button_size generator window]
+      getBody window #+ [ winner_button size num_mines button_size generator window
+                        , unclickable_grid grid size button_size window ]
       buttons <- getElementsByClassName window "button"
       if (not $ (length buttons) == ((size^2) + 1)) then do
         mapM_ Core.delete buttons
         gui grid size num_mines button_size generator window
       else return ()
   | lose grid = do
-      getBody window #+ [ unclickable_grid grid size button_size window
-                        , loser_button grid size num_mines button_size generator window]
+      getBody window #+ [ loser_button grid size num_mines button_size generator window
+                        , unclickable_grid grid size button_size window ]
       buttons <- getElementsByClassName window "button"
       if (not $ (length buttons) == ((size^2) + 1)) then do
         mapM_ Core.delete buttons
         gui grid size num_mines button_size generator window
       else return ()
   | otherwise = do
-      getBody window #+ [ clickable_grid grid size num_mines button_size generator window
-                        , ai_button grid size num_mines button_size generator window]
+      getBody window #+ [ ai_button grid size num_mines button_size generator window
+                        , clickable_grid grid size num_mines button_size generator window ]
       buttons <- getElementsByClassName window "button"
       if (not $ (length buttons) == ((size^2) + 1)) then do
         mapM_ Core.delete buttons
