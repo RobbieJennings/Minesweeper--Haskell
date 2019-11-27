@@ -122,6 +122,17 @@ lose grid = do
   let losers = map lose_cell grid
   True `elem` losers
 
+reset_cell :: Cell -> Cell
+reset_cell a = Cell { uncovered = False
+                     , flagged = False
+                     , bomb = bomb a
+                     , neighbours = neighbours a
+                     , number = number a
+                     }
+
+reset :: [Cell] -> [Cell]
+reset grid = map reset_cell grid
+
 ai :: [Cell] -> [Cell]
 ai grid = do
   uncover grid 0

@@ -2,7 +2,6 @@ module Main where
 
 import Minesweeper
 import UI
-import System.Random
 import System.Environment
 
 main :: IO ()
@@ -11,11 +10,8 @@ main = do
   let size = read (args!!0) :: Int
   let num_mines = read (args!!1) :: Int
 
-  bombs <- fmap (make_bombs size num_mines) getStdGen
-  let grid = make_grid size bombs
-
   -- Uncomment this line to play using threepenny GUI
-  gui_play grid size
+  gui_play size num_mines
 
   -- Uncomment this line to play using terminal
-  -- terminal_play grid size
+  -- terminal_play size num_mines

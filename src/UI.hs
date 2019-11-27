@@ -2,6 +2,7 @@ module UI where
 
 import Minesweeper
 import Data.List.Split
+import System.Random
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core as Core
 
@@ -70,8 +71,10 @@ terminal grid size
       do
         terminal grid size
 
-terminal_play :: [Cell] -> Int -> IO ()
-terminal_play grid size = do
+terminal_play :: Int -> Int -> IO ()
+terminal_play size num_mines = do
+  bombs <- fmap (make_bombs size num_mines) getStdGen
+  let grid = make_grid size bombs
   mapM_ print $ chunksOf size $ show_grid grid
   terminal grid size
 
@@ -111,18 +114,28 @@ ai_button grid size button_size window = do
     gui new_grid size button_size window
   return button
 
-winner_button :: Int -> Int -> Window -> UI Element
-winner_button size button_size window = do
-  button <- UI.button #+ [string "WINNER"]
+winner_button :: [Cell] -> Int -> Int -> Window -> UI Element
+winner_button grid size button_size window = do
+  button <- UI.button #+ [string ":)"]
                       # set (attr "class") ("button")
                       # set style [("width", (pixels (size * button_size))), ("height", (pixels button_size))]
+  on UI.click button $ \_ -> do
+    buttons <- getElementsByClassName window "button"
+    mapM_ Core.delete buttons
+    let new_grid = reset grid
+    gui new_grid size button_size window
   return button
 
-loser_button :: Int -> Int -> Window -> UI Element
-loser_button size button_size window = do
-  button <- UI.button #+ [string "LOSER"]
+loser_button :: [Cell] -> Int -> Int -> Window -> UI Element
+loser_button grid size button_size window = do
+  button <- UI.button #+ [string ":("]
                       # set (attr "class") ("button")
                       # set style [("width", (pixels (size * button_size))), ("height", (pixels button_size))]
+  on UI.click button $ \_ -> do
+    buttons <- getElementsByClassName window "button"
+    mapM_ Core.delete buttons
+    let new_grid = reset grid
+    gui new_grid size button_size window
   return button
 
 gui :: [Cell] -> Int -> Int -> Window -> UI ()
@@ -132,14 +145,14 @@ gui my_grid size button_size window
       let buttons = map button [0..(size^2)-1]
       button_grid <- grid $ chunksOf size buttons
       getBody window #+ [return button_grid]
-      getBody window #+ [winner_button size button_size window]
+      getBody window #+ [winner_button my_grid size button_size window]
       return ()
   | lose my_grid = do
       let button a = unclickable_cell my_grid size a button_size window
       let buttons = map button [0..(size^2)-1]
       button_grid <- grid $ chunksOf size buttons
       getBody window #+ [return button_grid]
-      getBody window #+ [loser_button size button_size window]
+      getBody window #+ [loser_button my_grid size button_size window]
       return ()
   | otherwise = do
       let button a = clickable_cell my_grid size a button_size window
@@ -149,7 +162,9 @@ gui my_grid size button_size window
       getBody window #+ [ai_button my_grid size button_size window]
       return ()
 
-gui_play :: [Cell] -> Int -> IO ()
-gui_play grid size = do
+gui_play :: Int -> Int -> IO ()
+gui_play size num_mines = do
   let button_size = 50
+  bombs <- fmap (make_bombs size num_mines) getStdGen
+  let grid = make_grid size bombs
   startGUI defaultConfig $ gui grid size button_size

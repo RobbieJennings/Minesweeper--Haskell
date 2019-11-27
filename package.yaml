@@ -39,7 +39,6 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - minesweeper
-    - random
 
 tests:
   minesweeper-test:
