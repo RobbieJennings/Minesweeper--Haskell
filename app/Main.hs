@@ -4,6 +4,9 @@ import Data.List
 import Data.List.Split
 import System.Random
 
+import qualified Graphics.UI.Threepenny as UI
+import Graphics.UI.Threepenny.Core as Core
+
 data Cell = Cell { uncovered    :: Bool
                  , flagged      :: Bool
                  , bomb         :: Bool
@@ -136,14 +139,8 @@ ai :: [Cell] -> [Cell]
 ai grid = do
   uncover grid 0
 
-move :: [Cell] -> String -> Int -> Int -> Int -> [Cell]
-move grid action size x y
-  | action == "flag" && x < size && y < size    = flag grid (get_index x y size)
-  | action == "uncover" && x < size && y < size = uncover grid (get_index x y size)
-  | otherwise                                   = grid
-
-play :: [Cell] -> Int -> IO ()
-play grid size
+terminal_play :: [Cell] -> Int -> IO ()
+terminal_play grid size
   | win grid size = putStrLn "You Win"
   | lose grid = putStrLn "You Lose"
   | otherwise = do
@@ -153,20 +150,124 @@ play grid size
       do
         let new_grid = ai grid
         mapM_ print $ chunksOf size $ show_grid new_grid
-        play new_grid size
-    else if (action == "flag" || action == "uncover") then
+        terminal_play new_grid size
+    else if (action == "flag") then
       do
         putStrLn "What is your x coordinate?"
-        x <- getLine
+        x_coordinate <- getLine
         putStrLn "What is your y coordinate?"
-        y <- getLine
-        let new_grid = move grid action size (read x :: Int) (read y :: Int)
-        mapM_ print $ chunksOf size $ show_grid new_grid
-        play new_grid size
+        y_coordinate <- getLine
+        let x = read x_coordinate :: Int
+        let y = read y_coordinate :: Int
+        if (x < size && y < size) then
+          do
+            let index = get_index x y size
+            let new_grid = flag grid index
+            mapM_ print $ chunksOf size $ show_grid new_grid
+            terminal_play new_grid size
+        else
+          do
+            mapM_ print $ chunksOf size $ show_grid grid
+            terminal_play grid size
+    else if (action == "uncover") then
+      do
+        putStrLn "What is your x coordinate?"
+        x_coordinate <- getLine
+        putStrLn "What is your y coordinate?"
+        y_coordinate <- getLine
+        let x = read x_coordinate :: Int
+        let y = read y_coordinate :: Int
+        if (x < size && y < size) then
+          do
+            let index = get_index x y size
+            let new_grid = flag grid index
+            mapM_ print $ chunksOf size $ show_grid new_grid
+            terminal_play new_grid size
+        else
+          do
+            mapM_ print $ chunksOf size $ show_grid grid
+            terminal_play grid size
     else
       do
-        play grid size
+        terminal_play grid size
 
+clickable_cell :: [Cell] -> Int -> Int -> Window -> UI Element
+clickable_cell grid size index window = do
+  button <- UI.button #+ [string (show_cell (grid!!index))]
+                      # set (attr "class") ("button")
+  on UI.click button $ \_ -> do
+    buttons <- getElementsByClassName window "button"
+    mapM_ Core.delete buttons
+    let new_grid = uncover grid index
+    gui_play new_grid size window
+  on UI.contextmenu button $ \_ -> do
+    buttons <- getElementsByClassName window "button"
+    mapM_ Core.delete buttons
+    let new_grid = flag grid index
+    gui_play new_grid size window
+  return button
+
+unclickable_cell :: [Cell] -> Int -> Int -> Window -> UI Element
+unclickable_cell grid size index window = do
+  button <- UI.button #+ [string (show_cell (grid!!index))]
+                      # set (attr "class") ("button")
+  return button
+
+ai_button :: [Cell] -> Int -> Window -> UI Element
+ai_button grid size window = do
+  let width = (show (size*24)) ++ "px"
+  let height = (show 24) ++ "px"
+  button <- UI.button #+ [string "AI"]
+                      # set (attr "class") ("button")
+                      # set style [("width", width), ("height", height)]
+  on UI.click button $ \_ -> do
+    buttons <- getElementsByClassName window "button"
+    mapM_ Core.delete buttons
+    let new_grid = ai grid
+    gui_play new_grid size window
+  return button
+
+winner_button :: Int -> Window -> UI Element
+winner_button size window = do
+  let width = (show (size*24)) ++ "px"
+  let height = (show 24) ++ "px"
+  button <- UI.button #+ [string "WINNER"]
+                      # set (attr "class") ("button")
+                      # set style [("width", width), ("height", height)]
+  return button
+
+loser_button :: Int -> Window -> UI Element
+loser_button size window = do
+  let w = (show (size*24)) ++ "px"
+  let h = (show 24) ++ "px"
+  button <- UI.button #+ [string "LOSER"]
+                      # set (attr "class") ("button")
+                      # set style [("width",w),("height",h)]
+  return button
+
+gui_play :: [Cell] -> Int -> Window -> UI ()
+gui_play my_grid size window
+  | win my_grid size = do
+      let button a = unclickable_cell my_grid size a window
+      let buttons = map button [0..(size^2)-1]
+      button_grid <- grid $ chunksOf size buttons
+      getBody window #+ [return button_grid]
+      getBody window #+ [winner_button size window]
+      return ()
+  | lose my_grid = do
+      let button a = unclickable_cell my_grid size a window
+      let buttons = map button [0..(size^2)-1]
+      button_grid <- grid $ chunksOf size buttons
+      getBody window #+ [return button_grid]
+      getBody window #+ [loser_button size window]
+      return ()
+  | otherwise = do
+      let button a = clickable_cell my_grid size a window
+      let buttons = map button [0..(size^2)-1]
+      button_grid <- grid $ chunksOf size buttons
+      getBody window #+ [return button_grid]
+      getBody window #+ [ai_button my_grid size window]
+      return ()
 
 main :: IO ()
 main = do
@@ -174,5 +275,10 @@ main = do
   let num_mines = 5
   bombs <- fmap (make_bombs size num_mines) getStdGen
   let grid = make_grid [] 0 0 size bombs
-  mapM_ print $ chunksOf size $ show_grid grid
-  play grid size
+
+  -- Uncomment this line to play using threepenny GUI
+  startGUI defaultConfig $ gui_play grid size
+
+  -- Uncomment these lines to play using terminal
+  -- mapM_ print $ chunksOf size $ show_grid grid
+  -- terminal_play grid size

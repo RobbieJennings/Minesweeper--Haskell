@@ -37,6 +37,7 @@ executables:
     - minesweeper
     - random
     - split
+    - threepenny-gui
 
 tests:
   minesweeper-test:
