@@ -40,8 +40,20 @@ make_cell x y size bombs = do
   let my_number = get_number x y size bombs
   Cell {uncovered=False, flagged=False, bomb=my_bomb, number=my_number, neighbours=my_neighbours}
 
-make_bombs :: Int -> Int -> StdGen -> [Int]
-make_bombs size count gen = take count $ nub $ randomRs (0, (size^2)-1) gen :: [Int]
+make_randoms :: Int -> Int -> [Int] -> StdGen -> ([Int], StdGen)
+make_randoms range count nums generator
+  | (length nums) >= count = do
+      let (_, new_gen) = randomR (0, (range-1)) generator
+      (nums, new_gen)
+  | otherwise = do
+      let all_nums = [0..range]
+      let available_nums = all_nums \\ nums
+      let (index, new_gen) = randomR (0, (length available_nums) - 1) generator
+      let num = available_nums!!index
+      make_randoms range count (nums++[num]) new_gen
+
+make_bombs :: Int -> Int -> StdGen -> ([Int], StdGen)
+make_bombs size count generator = make_randoms (size^2) count [] generator
 
 is_bomb :: Int -> Int -> Int -> [Int] -> Bool
 is_bomb x y size bombs = (get_index x y size) `elem` bombs
