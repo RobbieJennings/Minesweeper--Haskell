@@ -46,11 +46,11 @@ make_bombs size count gen = take count $ nub $ randomRs (0, (size^2)-1) gen :: [
 is_bomb :: Int -> Int -> Int -> [Int] -> Bool
 is_bomb x y size bombs = (get_index x y size) `elem` bombs
 
-make_grid :: [Cell] -> Int -> Int -> Int -> [Int] -> [Cell]
-make_grid grid x y size bombs
-  | y == size-1 && x == size-1 = grid++([make_cell x y size bombs])
-  | x == size-1                = make_grid (grid++[(make_cell x y size bombs)]) 0 (y+1) size bombs
-  | otherwise                  = make_grid (grid++[(make_cell x y size bombs)]) (x+1) (y) size bombs
+make_grid :: Int -> [Int] -> [Cell]
+make_grid size bombs = do
+  let coordinates = [(y, x) | x <- [0..size-1], y <- [0..size-1]]
+  let my_cell (x, y) = make_cell x y size bombs
+  map my_cell coordinates
 
 hidden_neighbours :: [Cell] -> Int -> [Int]
 hidden_neighbours grid index = do

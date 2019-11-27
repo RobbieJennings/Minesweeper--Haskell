@@ -12,7 +12,7 @@ main = do
   let num_mines = read (args!!1) :: Int
 
   bombs <- fmap (make_bombs size num_mines) getStdGen
-  let grid = make_grid [] 0 0 size bombs
+  let grid = make_grid size bombs
 
   -- Uncomment this line to play using threepenny GUI
   gui_play grid size
