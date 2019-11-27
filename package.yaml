@@ -24,6 +24,10 @@ dependencies:
 
 library:
   source-dirs: src
+  dependencies:
+  - random
+  - split
+  - threepenny-gui
 
 executables:
   minesweeper-exe:
@@ -36,8 +40,6 @@ executables:
     dependencies:
     - minesweeper
     - random
-    - split
-    - threepenny-gui
 
 tests:
   minesweeper-test:
