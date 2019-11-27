@@ -145,10 +145,24 @@ clickable_cell grid size num_mines index button_size generator window = do
     gui new_grid size num_mines button_size generator window
   return button
 
+clickable_grid :: [Cell] -> Int -> Int -> Int -> StdGen -> Window -> UI Element
+clickable_grid grid size num_mines button_size generator window = do
+  let button a = clickable_cell grid size num_mines a button_size generator window
+  let buttons = map button [0..(size^2)-1]
+  button_grid <- UI.grid $ chunksOf size buttons
+  return button_grid
+
 unclickable_cell :: [Cell] -> Int -> Int -> Int -> Window -> UI Element
 unclickable_cell grid size index button_size window = do
   button <- cell_button grid size index button_size window
   return button
+
+unclickable_grid :: [Cell] -> Int -> Int -> Window -> UI Element
+unclickable_grid grid size button_size window = do
+  let button a = unclickable_cell grid size a button_size window
+  let buttons = map button [0..(size^2)-1]
+  button_grid <- UI.grid $ chunksOf size buttons
+  return button_grid
 
 ai_button :: [Cell] -> Int -> Int -> Int -> StdGen -> Window -> UI Element
 ai_button grid size num_mines button_size generator window = do
@@ -185,28 +199,31 @@ loser_button grid size num_mines button_size generator window = do
   return button
 
 gui :: [Cell] -> Int -> Int -> Int -> StdGen -> Window -> UI ()
-gui my_grid size num_mines button_size generator window
-  | win my_grid size = do
-      let button a = unclickable_cell my_grid size a button_size window
-      let buttons = map button [0..(size^2)-1]
-      button_grid <- grid $ chunksOf size buttons
-      getBody window #+ [return button_grid]
-      getBody window #+ [winner_button size num_mines button_size generator window]
-      return ()
-  | lose my_grid = do
-      let button a = unclickable_cell my_grid size a button_size window
-      let buttons = map button [0..(size^2)-1]
-      button_grid <- grid $ chunksOf size buttons
-      getBody window #+ [return button_grid]
-      getBody window #+ [loser_button my_grid size num_mines button_size generator window]
-      return ()
+gui grid size num_mines button_size generator window
+  | win grid size = do
+      getBody window #+ [ unclickable_grid grid size button_size window
+                        , winner_button size num_mines button_size generator window]
+      buttons <- getElementsByClassName window "button"
+      if (not $ (length buttons) == ((size^2) + 1)) then do
+        mapM_ Core.delete buttons
+        gui grid size num_mines button_size generator window
+      else return ()
+  | lose grid = do
+      getBody window #+ [ unclickable_grid grid size button_size window
+                        , loser_button grid size num_mines button_size generator window]
+      buttons <- getElementsByClassName window "button"
+      if (not $ (length buttons) == ((size^2) + 1)) then do
+        mapM_ Core.delete buttons
+        gui grid size num_mines button_size generator window
+      else return ()
   | otherwise = do
-      let button a = clickable_cell my_grid size num_mines a button_size generator window
-      let buttons = map button [0..(size^2)-1]
-      button_grid <- grid $ chunksOf size buttons
-      getBody window #+ [return button_grid]
-      getBody window #+ [ai_button my_grid size num_mines button_size generator window]
-      return ()
+      getBody window #+ [ clickable_grid grid size num_mines button_size generator window
+                        , ai_button grid size num_mines button_size generator window]
+      buttons <- getElementsByClassName window "button"
+      if (not $ (length buttons) == ((size^2) + 1)) then do
+        mapM_ Core.delete buttons
+        gui grid size num_mines button_size generator window
+      else return ()
 
 start_gui :: Int -> Int -> Int -> StdGen -> Window -> UI ()
 start_gui size num_mines button_size generator = do

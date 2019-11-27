@@ -35,10 +35,10 @@ get_number x y size bombs = do
 
 make_cell :: Int -> Int -> Int -> [Int] -> Cell
 make_cell x y size bombs = do
-  let my_bomb = is_bomb x y size bombs
-  let my_neighbours = get_neighbours x y size
-  let my_number = get_number x y size bombs
-  Cell {uncovered=False, flagged=False, bomb=my_bomb, number=my_number, neighbours=my_neighbours}
+  let bomb = is_bomb x y size bombs
+  let neighbours = get_neighbours x y size
+  let number = get_number x y size bombs
+  Cell {uncovered=False, flagged=False, bomb=bomb, number=number, neighbours=neighbours}
 
 make_randoms :: Int -> Int -> [Int] -> StdGen -> ([Int], StdGen)
 make_randoms range count nums generator
@@ -61,15 +61,15 @@ is_bomb x y size bombs = (get_index x y size) `elem` bombs
 make_grid :: Int -> [Int] -> [Cell]
 make_grid size bombs = do
   let coordinates = [(y, x) | x <- [0..size-1], y <- [0..size-1]]
-  let my_cell (x, y) = make_cell x y size bombs
-  map my_cell coordinates
+  let cell (x, y) = make_cell x y size bombs
+  map cell coordinates
 
 hidden_neighbours :: [Cell] -> Int -> [Int]
 hidden_neighbours grid index = do
-  let my_cell = grid!!index
-  let my_neighbours = neighbours my_cell
+  let cell = grid!!index
+  let all_neighbours = neighbours cell
   let hidden a = not $ uncovered $ grid!!a
-  filter (hidden) my_neighbours
+  filter (hidden) all_neighbours
 
 uncover_cell :: Cell -> Cell
 uncover_cell a = Cell { uncovered = True
@@ -81,19 +81,19 @@ uncover_cell a = Cell { uncovered = True
 
 uncover :: [Cell] -> Int -> [Cell]
 uncover grid index = do
-  let my_cell = uncover_cell $ grid!!index
-  if ((number my_cell == 0) && (not $ bomb my_cell)) then
+  let cell = uncover_cell $ grid!!index
+  if ((number cell == 0) && (not $ bomb cell)) then
     do
       let first = take index grid
       let second = drop (index+1) grid
-      let new_grid = first ++ ([my_cell] ++ second)
+      let new_grid = first ++ ([cell] ++ second)
       let neighbours = hidden_neighbours grid index
       foldl uncover new_grid neighbours
   else
     do
       let first = take index grid
       let second = drop (index+1) grid
-      first ++ ([my_cell] ++ second)
+      first ++ ([cell] ++ second)
 
 flag_cell :: Cell -> Cell
 flag_cell a | uncovered a = a
@@ -112,10 +112,10 @@ flag_cell a | uncovered a = a
 
 flag :: [Cell] -> Int -> [Cell]
 flag grid index = do
-  let my_cell = flag_cell $ grid!!index
+  let cell = flag_cell $ grid!!index
   let first = take index grid
   let second = drop (index+1) grid
-  first ++ ([my_cell] ++ second)
+  first ++ ([cell] ++ second)
 
 win_cell :: Cell -> Bool
 win_cell a = ((uncovered a) && (not (bomb a))) || ((not (uncovered a)) && (bomb a))
