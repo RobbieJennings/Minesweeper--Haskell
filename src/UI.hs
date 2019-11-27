@@ -5,6 +5,9 @@ import Data.List.Split
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core as Core
 
+pixels :: Int -> String
+pixels size = (show size) ++ "px"
+
 show_cell :: Cell -> String
 show_cell a
   | flagged a             = "F"
@@ -72,83 +75,81 @@ terminal_play grid size = do
   mapM_ print $ chunksOf size $ show_grid grid
   terminal grid size
 
-clickable_cell :: [Cell] -> Int -> Int -> Window -> UI Element
-clickable_cell grid size index window = do
+clickable_cell :: [Cell] -> Int -> Int -> Int -> Window -> UI Element
+clickable_cell grid size index button_size window = do
   button <- UI.button #+ [string (show_cell (grid!!index))]
                       # set (attr "class") ("button")
+                      # set style [("width", (pixels button_size)), ("height", (pixels button_size))]
   on UI.click button $ \_ -> do
     buttons <- getElementsByClassName window "button"
     mapM_ Core.delete buttons
     let new_grid = uncover grid index
-    gui new_grid size window
+    gui new_grid size button_size window
   on UI.contextmenu button $ \_ -> do
     buttons <- getElementsByClassName window "button"
     mapM_ Core.delete buttons
     let new_grid = flag grid index
-    gui new_grid size window
+    gui new_grid size button_size window
   return button
 
-unclickable_cell :: [Cell] -> Int -> Int -> Window -> UI Element
-unclickable_cell grid size index window = do
+unclickable_cell :: [Cell] -> Int -> Int -> Int -> Window -> UI Element
+unclickable_cell grid size index button_size window = do
   button <- UI.button #+ [string (show_cell (grid!!index))]
                       # set (attr "class") ("button")
+                      # set style [("width", (pixels button_size)), ("height", (pixels button_size))]
   return button
 
-ai_button :: [Cell] -> Int -> Window -> UI Element
-ai_button grid size window = do
-  let width = (show (size*24)) ++ "px"
-  let height = (show 24) ++ "px"
+ai_button :: [Cell] -> Int -> Int -> Window -> UI Element
+ai_button grid size button_size window = do
   button <- UI.button #+ [string "AI"]
                       # set (attr "class") ("button")
-                      # set style [("width", width), ("height", height)]
+                      # set style [("width", (pixels (size * button_size))), ("height", (pixels button_size))]
   on UI.click button $ \_ -> do
     buttons <- getElementsByClassName window "button"
     mapM_ Core.delete buttons
     let new_grid = ai grid
-    gui new_grid size window
+    gui new_grid size button_size window
   return button
 
-winner_button :: Int -> Window -> UI Element
-winner_button size window = do
-  let width = (show (size*24)) ++ "px"
-  let height = (show 24) ++ "px"
+winner_button :: Int -> Int -> Window -> UI Element
+winner_button size button_size window = do
   button <- UI.button #+ [string "WINNER"]
                       # set (attr "class") ("button")
-                      # set style [("width", width), ("height", height)]
+                      # set style [("width", (pixels (size * button_size))), ("height", (pixels button_size))]
   return button
 
-loser_button :: Int -> Window -> UI Element
-loser_button size window = do
-  let width = (show (size*24)) ++ "px"
-  let height = (show 24) ++ "px"
+loser_button :: Int -> Int -> Window -> UI Element
+loser_button size button_size window = do
   button <- UI.button #+ [string "LOSER"]
                       # set (attr "class") ("button")
-                      # set style [("width", width), ("height", height)]
+                      # set style [("width", (pixels (size * button_size))), ("height", (pixels button_size))]
   return button
 
-gui :: [Cell] -> Int -> Window -> UI ()
-gui my_grid size window
+gui :: [Cell] -> Int -> Int -> Window -> UI ()
+gui my_grid size button_size window
   | win my_grid size = do
-      let button a = unclickable_cell my_grid size a window
+      let button a = unclickable_cell my_grid size a button_size window
       let buttons = map button [0..(size^2)-1]
       button_grid <- grid $ chunksOf size buttons
       getBody window #+ [return button_grid]
-      getBody window #+ [winner_button size window]
+      getBody window #+ [winner_button size button_size window]
       return ()
   | lose my_grid = do
-      let button a = unclickable_cell my_grid size a window
+      let button a = unclickable_cell my_grid size a button_size window
       let buttons = map button [0..(size^2)-1]
       button_grid <- grid $ chunksOf size buttons
       getBody window #+ [return button_grid]
-      getBody window #+ [loser_button size window]
+      getBody window #+ [loser_button size button_size window]
       return ()
   | otherwise = do
-      let button a = clickable_cell my_grid size a window
+      let button a = clickable_cell my_grid size a button_size window
       let buttons = map button [0..(size^2)-1]
       button_grid <- grid $ chunksOf size buttons
       getBody window #+ [return button_grid]
-      getBody window #+ [ai_button my_grid size window]
+      getBody window #+ [ai_button my_grid size button_size window]
       return ()
 
 gui_play :: [Cell] -> Int -> IO ()
-gui_play grid size = startGUI defaultConfig $ gui grid size
+gui_play grid size = do
+  let button_size = 50
+  startGUI defaultConfig $ gui grid size button_size
