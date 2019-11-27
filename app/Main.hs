@@ -12,30 +12,7 @@ data Cell = Cell { uncovered    :: Bool
                  , bomb         :: Bool
                  , number       :: Int
                  , neighbours   :: [Int]
-                 } deriving (Show)
-
-uncover_cell :: Cell -> Cell
-uncover_cell a = Cell { uncovered = True
-                      , flagged = False
-                      , bomb = bomb a
-                      , number = number a
-                      , neighbours = neighbours a
-                      }
-
-flag_cell :: Cell -> Cell
-flag_cell a | uncovered a = a
-            | flagged a   = Cell { uncovered = False
-                                 , flagged = False
-                                 , bomb = bomb a
-                                 , neighbours = neighbours a
-                                 , number = number a
-                                 }
-            | otherwise   = Cell { uncovered = False
-                                 , flagged = True
-                                 , bomb = bomb a
-                                 , neighbours = neighbours a
-                                 , number = number a
-                                 }
+                 }
 
 get_index :: Int -> Int -> Int -> Int
 get_index x y size = x+(y*size)
@@ -67,7 +44,7 @@ make_cell x y size bombs = do
   Cell {uncovered=False, flagged=False, bomb=my_bomb, number=my_number, neighbours=my_neighbours}
 
 make_bombs :: Int -> Int -> StdGen -> [Int]
-make_bombs size count gen = take count $ nub $ randomRs(0, (size^2)-1) gen :: [Int]
+make_bombs size count gen = take count $ nub $ randomRs (0, (size^2)-1) gen :: [Int]
 
 is_bomb :: Int -> Int -> Int -> [Int] -> Bool
 is_bomb x y size bombs = (get_index x y size) `elem` bombs
@@ -85,6 +62,14 @@ hidden_neighbours grid index = do
   let hidden a = not $ uncovered $ grid!!a
   filter (hidden) my_neighbours
 
+uncover_cell :: Cell -> Cell
+uncover_cell a = Cell { uncovered = True
+                      , flagged = False
+                      , bomb = bomb a
+                      , number = number a
+                      , neighbours = neighbours a
+                      }
+
 uncover :: [Cell] -> Int -> [Cell]
 uncover grid index = do
   let my_cell = uncover_cell $ grid!!index
@@ -100,6 +85,21 @@ uncover grid index = do
       let first = take index grid
       let second = drop (index+1) grid
       first ++ ([my_cell] ++ second)
+
+flag_cell :: Cell -> Cell
+flag_cell a | uncovered a = a
+            | flagged a   = Cell { uncovered = False
+                                 , flagged = False
+                                 , bomb = bomb a
+                                 , neighbours = neighbours a
+                                 , number = number a
+                                 }
+            | otherwise   = Cell { uncovered = False
+                                 , flagged = True
+                                 , bomb = bomb a
+                                 , neighbours = neighbours a
+                                 , number = number a
+                                 }
 
 flag :: [Cell] -> Int -> [Cell]
 flag grid index = do
@@ -238,11 +238,11 @@ winner_button size window = do
 
 loser_button :: Int -> Window -> UI Element
 loser_button size window = do
-  let w = (show (size*24)) ++ "px"
-  let h = (show 24) ++ "px"
+  let width = (show (size*24)) ++ "px"
+  let height = (show 24) ++ "px"
   button <- UI.button #+ [string "LOSER"]
                       # set (attr "class") ("button")
-                      # set style [("width",w),("height",h)]
+                      # set style [("width", width), ("height", height)]
   return button
 
 gui_play :: [Cell] -> Int -> Window -> UI ()
