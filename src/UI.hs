@@ -67,7 +67,7 @@ terminal grid size
         if (x < size && y < size) then
           do
             let index = get_index x y size
-            let new_grid = flag grid index
+            let new_grid = uncover grid index
             mapM_ print $ chunksOf size $ show_grid new_grid
             terminal new_grid size
         else
