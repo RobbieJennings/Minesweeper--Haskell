@@ -35,7 +35,7 @@ terminal grid size
     action <- getLine
     if (action == "ai") then
       do
-        let new_grid = ai grid
+        let new_grid = ai grid size
         mapM_ print $ chunksOf size $ show_grid new_grid
         terminal new_grid size
     else if (action == "flag") then
@@ -183,7 +183,7 @@ ai_button grid size num_mines button_size generator window = do
   on UI.click button $ \_ -> do
     buttons <- getElementsByClassName window "button"
     mapM_ Core.delete buttons
-    let new_grid = ai grid
+    let new_grid = ai grid size
     gui new_grid size num_mines button_size generator window
   return button
 

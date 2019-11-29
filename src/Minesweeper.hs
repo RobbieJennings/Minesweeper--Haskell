@@ -80,6 +80,14 @@ hidden_neighbours grid index = do
   let hidden a = not $ uncovered $ grid!!a
   filter (hidden) all_neighbours
 
+-- Finds all neighbours of a cell in a grid that have been flagged
+flagged_neighbours :: [Cell] -> Int -> [Int]
+flagged_neighbours grid index = do
+  let cell = grid!!index
+  let all_neighbours = neighbours cell
+  let flag a = flagged $ grid!!a
+  filter (flag) all_neighbours
+
 -- Uncovers individual cell
 uncover_cell :: Cell -> Cell
 uncover_cell a = Cell { uncovered = True
@@ -164,7 +172,70 @@ reset_cell a = Cell { uncovered = False
 reset :: [Cell] -> [Cell]
 reset grid = map reset_cell grid
 
+-- Finds all neighbours of a cell that are potential mines
+potential_neighbours :: [Cell] -> Int -> [Int]
+potential_neighbours grid index = do
+  let hidden = hidden_neighbours grid index
+  let flagged = flagged_neighbours grid index
+  hidden \\ flagged
+
+-- Checks if cell is hidden and neighbouring a revealed cell with a number greater than 0
+-- This means we can reasonably calculate a probability of this cell being a mine.
+potential_cell :: [Cell] -> Int -> Bool
+potential_cell grid index
+  | (uncovered (grid!!index)) || (flagged (grid!!index)) = False
+  | otherwise = do
+    let is_number a = (uncovered (grid!!a)) && ((number (grid!!a)) > 0)
+    let numbers = map is_number (neighbours (grid!!index))
+    True `elem` numbers
+
+-- Finds all potential cells in a grid
+potential_cells :: [Cell] -> Int -> [Int]
+potential_cells grid size = filter (potential_cell grid) [0..(size^2)-1]
+
+-- Finds all cells that are not uncovered and not flagged in a grid
+hidden_cells :: [Cell] -> Int -> [Int]
+hidden_cells grid size = do
+  let is_hidden a = (not $ uncovered $ grid!!a) && (not $ flagged $ grid!!a)
+  filter is_hidden [0..(size^2)-1]
+
+-- Finds all uncovered cells that have neighbouring mines in a grid
+number_cells :: [Cell] -> Int -> [Int]
+number_cells grid size = do
+  let indices = [0..((size^2)-1)]
+  let numbered_cell a = (uncovered $ grid!!a) && ((number $ grid!!a) > 0)
+  filter (numbered_cell) indices
+
+-- Gets probability of all neighbouring hidden cells being a bomb
+-- Returns probability and list of neighbouring indices
+probability_cell :: [Cell] -> Int -> ([Int], Float)
+probability_cell grid index = do
+  let cell_number = number (grid!!index)
+  let potential_mines = potential_neighbours grid index
+  let probability = (fromIntegral cell_number) / (fromIntegral $ length potential_mines)
+  (potential_mines, probability)
+
+-- Gets probability of every cell being a bomb by averaging probabilities for each cell
+probability_grid :: [Cell] -> Int -> [(Int, Float)]
+probability_grid grid size = do
+  let default_probability a = (a, 0.5)
+  let probabilities = map (probability_cell grid) (number_cells grid size)
+  let occurs index a = index `elem` (fst a)
+  let occurances a = filter (occurs a) probabilities
+  let get_probabilities a = map (snd) (occurances a)
+  let get_average a = (sum $ get_probabilities a) / (fromIntegral $ length $ get_probabilities a)
+  let get_tuple a = (a, (get_average a))
+  let known_probabilities = map get_tuple (potential_cells grid size)
+  let unknowns = (hidden_cells grid size) \\ (map fst known_probabilities)
+  let unknown_probabilities = map default_probability unknowns
+  known_probabilities ++ unknown_probabilities
+
 -- Makes safest possible move in a grid of cells
-ai :: [Cell] -> [Cell]
-ai grid = do
-  uncover grid 0
+ai :: [Cell] -> Int -> [Cell]
+ai grid size = do
+  let probabilities = probability_grid grid size
+  let minimum_probability a = (snd a) == (minimum $ map snd probabilities)
+  let maximum_probability a = (snd a) == (maximum $ map snd probabilities)
+  let safest_uncover = head $ filter (minimum_probability) probabilities
+  let safest_flag = head $ filter (minimum_probability) probabilities
+  uncover grid (fst safest_uncover)
