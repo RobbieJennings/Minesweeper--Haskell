@@ -3,6 +3,7 @@ module Minesweeper where
 import Data.List
 import Data.List.Split
 import System.Random
+import Control.Monad
 
 data Cell = Cell { uncovered    :: Bool
                  , flagged      :: Bool
@@ -238,4 +239,7 @@ ai grid size = do
   let maximum_probability a = (snd a) == (maximum $ map snd probabilities)
   let safest_uncover = head $ filter (minimum_probability) probabilities
   let safest_flag = head $ filter (minimum_probability) probabilities
-  uncover grid (fst safest_uncover)
+  if (snd safest_flag) == 1 then
+    flag grid (fst safest_flag)
+  else
+    uncover grid (fst safest_uncover)
